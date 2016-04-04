@@ -1,0 +1,48 @@
+# publish.yml
+#
+# Gather logfiles from a CI run and publish them to the specified web-server {{
+# hosts }}
+#
+# Parameters:
+# - `hosts` = lists of hosts to run playbook against
+# - `results_dir` = local directly that contains the CI run logs/results
+# - `publish_dir` = remote/web-server directory to publish logs/files on
+# - `ref_name` = ref_name used for test-run used as subdir for results
+#
+#   Example (don't forget the commas after hosts and -i):
+#
+#      ansible-playbook ./stackbooks/publish.yml\
+#      --extra-vars="hosts=my-webserver \
+#      publish_dir=/var/www/ci_logs/run_name \
+#      results_dir=/tmp ref_name=foo" -i 172.16.140.105,
+
+- hosts: "{{ hosts }}"
+  connection: smart
+  gather_facts: false
+  tasks:
+  - name: Nuke it if it exists
+    shell: rm -rf {{ ref_name }}*
+    args:
+      chdir: {{ publish_dir }}
+
+  - name: Create ref directory on web server
+    shell: mkdir {{ publish_dir}}
+
+  - name: Copy backup of console file
+    copy: src={{ results_dir }}/console.log.out dest={{ publish_dir }}/console.log.out
+    ignore_errors: yes
+
+  - name: Copy files to web server
+    copy: src={{ results_dir }}/{{ item }} dest={{ publish_dir }}
+    ignore_errors: yes
+    with_items:
+      - ansible.out
+      - stack.sh.log.out
+      - "{{ ref_name }}.tar.gz"
+
+  - name: Untar log files on web
+    shell: tar -xzf {{ ref_name }}.tar.gz
+    ignore_errors: yes
+    args:
+      chdir: {{ publish_dir}}/{{ ref_name }}
+

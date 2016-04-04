@@ -1,0 +1,39 @@
+# Run tempest volume tests on a devstack system
+#
+# Runs tempest Volume tests on an existing devstack node {{ hosts }}
+#
+#   Parameters:
+#   - `hosts` = lists of hosts to run playbook against
+#   - `results_dir` = local directory to fetch stack.sh results to
+#   - `instance_name` = handy name for a local subdir to store results in
+#
+#   Example:
+#   `ansible-playbook run_tempest.yml --extra-vars="hosts=192.168.1.9, \
+#   results_dir=/tmp/results instance_name=WildBill" -i 192.168.1.9,
+#
+#   ** NOTE: For CI we typicaly use the patchset ref: refs/changes/02/291302/2
+#            and just s/\//-/
+
+- hosts: {{ hosts }}
+  tasks:
+
+  - name: get the cinder commit sha
+    sudo: no
+    shell: echo cinder_commit_id `git rev-parse --short HEAD` > /opt/stack/tempest/console.log.out
+    args:
+      chdir: /opt/stack/cinder
+    ignore_errors: True
+
+  - name: run tempest
+    sudo: no
+    shell: tox -e all -- volume | tee -a console.log.out
+    args:
+      chdir: /opt/stack/tempest
+
+  - name: Fetch tempest log
+    sudo: yes
+    fetch: src=/opt/stack/tempest/console.log.out dest={{ results_dir }}/console.log.out flat=yes validate_md5=no
+
+  - name: Fetch tempest log
+    sudo: yes
+    fetch: src=/opt/stack/tempest/console.log.out dest=/tmp/{{ instance_name }}.console.log.out flat=yes validate_md5=no

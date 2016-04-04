@@ -1,0 +1,58 @@
+# install_devstack.yml
+#
+# Install devstack and run stack.sh on the specified {{ hosts }}
+# * Assumes a clean system with no existing devstack installed
+# * Currently only uses master branch of devstack
+# * patchset_ref is used to specify a cinder patch to test, can be set to
+#   'master' if no patch is desired.
+#
+#   Parameters:
+#   - `hosts` = lists of hosts to run playbook against
+#   - `devstack_conf` = local.conf file to use for stack.sh
+#   - `results_dir` = local directory to fetch stack.sh results to
+#   - `patchset_ref` = allows speicfication of a cinder patch from gerrit
+#
+#   Example (don't forget the commas after hosts and -i):
+#
+#      ansible-playbook ./stackbooks/install_devstack.yml -vvv \
+#      --extra-vars="hosts=172.16.140.105, devstack_conf=./contrib/localconf.base \
+#      results_dir=/tmp patchset_ref=master" -i 172.16.140.105,
+
+- hosts: "{{ hosts }}"
+  tasks:
+
+  - name: apt-get update
+    apt: update_cache=yes
+    sudo: yes
+
+  - name: install pkgs
+    sudo: yes
+    apt: pkg={{item}} state=present
+    with_items:
+      - git
+      - vim
+
+  - name: clone devstack
+    sudo: no
+    git: repo=https://github.com/openstack-dev/devstack dest=~/devstack
+
+  - name: send over local.conf
+    sudo: no
+    template: src={{ devstack_conf }} dest=/home/ubuntu/devstack/local.conf
+
+  - name: modify cinder_branch
+    lineinfile: dest=/home/ubuntu/devstack/local.conf regexp=^CINDER_BRANCH= line=CINDER_BRANCH={{ patchset_ref }}
+    register: git_sha
+
+  - name: run stack.sh
+    sudo: no
+    shell: cd /home/ubuntu/devstack; ./stack.sh 2>&1 > /tmp/stack.sh.log.out
+    register: stack_result
+    ignore_errors: true
+
+  - name: Fetch stack.sh.log.out
+    fetch: src=/tmp/stack.sh.log.out dest={{ results_dir }}/stack.sh.log.out flat=yes validate_md5=no
+
+  - name: Fail the stack.sh task
+    fail: msg="Failed to complete stack.sh"
+    when: stack_result|failed

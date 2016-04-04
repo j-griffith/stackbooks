@@ -1,0 +1,21 @@
+# Add another nic (eth1) to {{ hosts }}
+#
+# Used for adding say an iSCSI nic to an OpenStack Instance {{ hosts }}
+# * Assumes we've added an additional network already, has been used with
+#   nova-net but should probably be able to adapt for Neutron
+# * Simply adds the cfg file and does and ifup
+#
+#   Parameters:
+#   - `hosts` = lists of hosts to run playbook against
+#   - `eth1-cfg` = an ethernet config file suitable for Ubuntu
+
+- hosts: {{hosts}}
+  tasks:
+
+  - name: send over eth1.cfg
+    sudo: yes
+    template: src={{eth1-cfg}} dest=/etc/network/interfaces.d/eth1.cfg
+
+  - name: enable eth1
+    sudo: yes
+    shell: ifup eth1
