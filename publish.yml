@@ -23,13 +23,13 @@
   - name: Nuke it if it exists
     shell: rm -rf {{ ref_name }}*
     args:
-      chdir: {{ publish_dir }}
+        chdir: "{{ publish_dir }}"
 
   - name: Create ref directory on web server
     shell: mkdir {{ publish_dir}}
 
   - name: Copy backup of console file
-    copy: src={{ results_dir }}/console.log.out dest={{ publish_dir }}/console.log.out
+    copy: src="{{ results_dir }}/console.log.out" dest={{ publish_dir }}/console.log.out
     ignore_errors: yes
 
   - name: Copy files to web server
@@ -41,8 +41,8 @@
       - "{{ ref_name }}.tar.gz"
 
   - name: Untar log files on web
-    shell: tar -xzf {{ ref_name }}.tar.gz
+    shell: tar -xzf "{{ ref_name }}.tar.gz"
     ignore_errors: yes
     args:
-      chdir: {{ publish_dir}}/{{ ref_name }}
+      chdir: "{{ publish_dir }}/{{ ref_name }}"
 

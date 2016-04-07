@@ -14,7 +14,7 @@
 #   ** NOTE: For CI we typicaly use the patchset ref: refs/changes/02/291302/2
 #            and just s/\//-/
 
-- hosts: {{ hosts }}
+- hosts: "{{ hosts }}"
   tasks:
 
   - name: get the cinder commit sha
@@ -32,8 +32,8 @@
 
   - name: Fetch tempest log
     sudo: yes
-    fetch: src=/opt/stack/tempest/console.log.out dest={{ results_dir }}/console.log.out flat=yes validate_md5=no
+    fetch: src=/opt/stack/tempest/console.log.out dest="{{ results_dir }}"/console.log.out flat=yes validate_md5=no
 
   - name: Fetch tempest log
     sudo: yes
-    fetch: src=/opt/stack/tempest/console.log.out dest=/tmp/{{ instance_name }}.console.log.out flat=yes validate_md5=no
+    fetch: src=/opt/stack/tempest/console.log.out dest=/tmp/"{{ instance_name }}".console.log.out flat=yes validate_md5=no
